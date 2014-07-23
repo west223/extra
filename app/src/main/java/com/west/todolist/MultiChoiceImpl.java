@@ -7,7 +7,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.AbsListView;
+import android.widget.ListView;
 import android.widget.Toast;
+
+import com.west.todolist.database.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,17 +21,25 @@ import java.util.List;
 public class MultiChoiceImpl implements AbsListView.MultiChoiceModeListener {
     private AbsListView listView;
 
-    public MultiChoiceImpl(AbsListView listView) {
+    MainActivity.MyAdapter myAdapter;
+
+    public MultiChoiceImpl(AbsListView listView, MainActivity.MyAdapter adapt) {
         this.listView = listView;
+        myAdapter = adapt;
     }
+
 
     @Override
     //Метод вызывается при любом изменения состояния выделения рядов
     public void onItemCheckedStateChanged(ActionMode actionMode, int i, long l, boolean b) {
 
-        int selectedCount = listView.getCheckedItemCount();
+       final int selectedCount = listView.getCheckedItemCount();
         //Добавим количество выделенных рядов в Context Action Bar
-        setSubtitle(actionMode, selectedCount);
+        //setSubtitle(actionMode, selectedCount);
+        //new
+        actionMode.setTitle(selectedCount + " Selected");
+        //new
+        myAdapter.toggleSelection(i);
     }
 
     @Override
@@ -48,12 +59,46 @@ public class MultiChoiceImpl implements AbsListView.MultiChoiceModeListener {
 
     @Override
     public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
-        Toast.makeText(listView.getContext(), "Action - " + menuItem.getTitle() + " ; Selected items: " + getSelectedFiles(), Toast.LENGTH_LONG).show();
-        return false;
+
+        switch (menuItem.getItemId()){
+            case R.id.delete_item:
+                SparseBooleanArray selected = myAdapter.getSelectedIds();
+                for (int i = (selected.size() - 1); i >= 0; i--){
+                    if (selected.valueAt(i)){
+                        Task selecteditem = myAdapter.getItem(selected.keyAt(i));
+                        myAdapter.remove(selecteditem);
+
+                    }
+                }
+                actionMode.finish();
+                return true;
+//            case R.id.delete_all:
+//
+//                myAdapter.removeAll();
+
+//                int position;
+//
+//                SparseBooleanArray sel = myAdapter.getSelectedIds();
+//                position=listView.getCheckedItemPosition();
+//                for (int i=(sel.size() -1); i>=0; i--) {
+//                    if (sel.valueAt(i)) {
+//                        Task selitem = myAdapter.getItem(sel.keyAt(i));
+//                        myAdapter.getAllIds(selitem);
+//                    }
+//
+//                }
+//                actionMode.finish();
+//                        return true;
+
+            default:
+                return false;
+        }
+
     }
 
     @Override
     public void onDestroyActionMode(ActionMode actionMode) {
+        myAdapter.removeSelection();
 
     }
 
@@ -69,6 +114,7 @@ public class MultiChoiceImpl implements AbsListView.MultiChoiceModeListener {
     }
 
     private List<String> getSelectedFiles() {
+
         List<String> selectedFiles = new ArrayList<String>();
 
         SparseBooleanArray sparseBooleanArray = listView.getCheckedItemPositions();

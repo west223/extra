@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -46,10 +47,9 @@ public class MainActivity extends Activity {
 
     public CheckBox checkBox1;
 
-   // public ActionMode mActionMode;
-
     TextView taskTxt;
 
+    Button deleteall1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,19 +60,14 @@ public class MainActivity extends Activity {
         list = db.getAllTasks();
         adapt = new MyAdapter(this, R.layout.list_inner_view, list, null);
 
-        //new
-        //ListView listView = getListView();
-
-
-        ListView listTask = (ListView) findViewById(R.id.listView1);
-
+        final ListView listTask = (ListView) findViewById(R.id.listView1);
 
         listTask.setAdapter(adapt);
 
-        //ArrayAdapter<Task> MyAdapter = new MyAdapter(this, R.layout.list_inner_view, list, listView);
-
+        //Contextual Action Bar
         listTask.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-        listTask.setMultiChoiceModeListener(new MultiChoiceImpl(listTask));
+        listTask.setMultiChoiceModeListener(new MultiChoiceImpl(listTask, adapt));
+
 
     }
 
@@ -93,18 +88,32 @@ public class MainActivity extends Activity {
     }
 
 
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+//        MenuInflater inflater = getMenuInflater();
+//        inflater.inflate(R.menu.);
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        switch (item.getItemId()){
+            case R.id.deleteall1:
+
+                adapt.removeAll();
+
+                return true;
+
+        }
+
         int id = item.getItemId();
         if (id == R.id.action_settings) {
             return true;
@@ -118,28 +127,41 @@ public class MainActivity extends Activity {
 //    }
 
 
-    public class MyAdapter extends ArrayAdapter<Task>{
+    public class MyAdapter extends ArrayAdapter<Task> {
 
         Context context;
 
         CheckBox chk;
 
         public ListView listView;
+        //new
+        private SparseBooleanArray mSelectedItemsIds;
+        //new
+        LayoutInflater inflater;
 
-        List<Task> taskList = new ArrayList<Task>();
+        //new
+        Button btnDelAll;
+
+
+        public List<Task> taskList = new ArrayList<Task>();
         int layoutResourceId;
 
         public MyAdapter(Context context, int layoutResourceId, List<Task> objects, ListView listView) {
             super(context, layoutResourceId, objects);
+            //new
+            mSelectedItemsIds = new SparseBooleanArray();
 
             this.layoutResourceId = layoutResourceId;
             this.taskList = objects;
             this.context = context;
             this.listView = listView;
+            //new
+            inflater = LayoutInflater.from(context);
 
         }
 
-         class ViewHolder {
+        //???
+        class ViewHolder {
             TextView text;
             CheckBox chk;
         }
@@ -171,13 +193,14 @@ public class MainActivity extends Activity {
             } else {
                 chk = (CheckBox) convertView.getTag();
             }
+            //check box1 true or false
             Task current = taskList.get(position);
             chk.setText(current.getTaskName());
+            chk.setChecked(current.getStatus() == 1 ? true : false);
             chk.setTag(current);
-            Log.d("listiner", String.valueOf(current.getId()));
 
             return convertView;
-
+        }
 //            if (convertView==null){
 //                LayoutInflater inflater = ((Activity) getContext()).getLayoutInflater();
 //                convertView = inflater.inflate(R.layout.list_inner_view, parent, false);
@@ -210,11 +233,65 @@ public class MainActivity extends Activity {
 //                }
 //            });
 //            return convertView;
+
+        //new
+        public void remove(Task object) {
+            taskList.remove(object);
+            db.deleteTask(object);
+            notifyDataSetChanged();
+
         }
+        //new
+        public void removeAll() {
+                taskList.clear();
+            db.deleteAllTasks();
+
+            notifyDataSetChanged();
+            Log.d("REMOVE ", "remove aal log");
+        }
+
+        int count;
+
+        //new
+        public List<Task> getTaskList() {
+            return taskList;
+        }
+
+        //new
+        public void selectView(int position, boolean value) {
+            if (value)
+                mSelectedItemsIds.put(position, value);
+            else
+                mSelectedItemsIds.delete(position);
+            notifyDataSetChanged();
+        }
+
+        //new
+        public int getSelectedCount() {
+            return mSelectedItemsIds.size();
+        }
+
+        //new
+        public SparseBooleanArray getSelectedIds() {
+            return mSelectedItemsIds;
+        }
+
+        //new
+        public void removeSelection() {
+            mSelectedItemsIds = new SparseBooleanArray();
+            notifyDataSetChanged();
+        }
+
+        //new
+        public void toggleSelection(int position) {
+            selectView(position, !mSelectedItemsIds.get(position));
+        }
+
+    }
 
     }
 
 
 
-}
+
 
