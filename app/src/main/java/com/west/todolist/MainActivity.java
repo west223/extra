@@ -58,7 +58,10 @@ public class MainActivity extends Activity {
 
         db = new TaskDBHelper(this);
         list = db.getAllTasks();
-        adapt = new MyAdapter(this, R.layout.list_inner_view, list, null);
+
+        int resID = R.layout.todolist_item;
+        adapt = new MyAdapter(this, resID, list, null);
+        //adapt = new MyAdapter(this, R.layout.list_inner_view, list, null);
 
         final ListView listTask = (ListView) findViewById(R.id.listView1);
 
